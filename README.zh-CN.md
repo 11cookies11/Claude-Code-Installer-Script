@@ -113,6 +113,16 @@ claude doctor
 
 release workflow 会在打包时重新生成 `vendor/`，所以发布包会带上最新的离线资源。
 
+## 日志在哪里
+
+脚本启动后会自动写日志到：
+
+```text
+%TEMP%\Claude-Code-Installer-Script\logs\install-YYYYMMDD-HHMMSS.log
+```
+
+如果脚本出错，窗口里也会提示这份日志的具体路径。你可以先打开这份日志看最后几行，通常就能知道为什么会退出。
+
 ## DeepSeek Token 怎么获取
 
 这里脚本里说的 token，就是 DeepSeek 控制台里创建出来的 API Key。你可以按下面一步一步来：

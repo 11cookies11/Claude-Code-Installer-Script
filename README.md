@@ -108,6 +108,17 @@ The `src/` folder contains:
 The release workflow regenerates `vendor/` at publish time, so the archive
 always carries fresh offline resources.
 
+## Where the Log Goes
+
+The script writes a log file automatically to:
+
+```text
+%TEMP%\Claude-Code-Installer-Script\logs\install-YYYYMMDD-HHMMSS.log
+```
+
+If the script fails, the window will print the exact log path. Check the last
+few lines in that file first; they usually show why the script exited.
+
 ## How to Get the DeepSeek Token
 
 The token mentioned by the script is the API key created in the DeepSeek

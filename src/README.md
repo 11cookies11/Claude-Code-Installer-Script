@@ -53,3 +53,14 @@ steps:
 
 If you lose the value later, you will usually need to create a new key in the
 DeepSeek console. Treat it like a password.
+
+## Where the Log Goes
+
+The script writes a log file automatically to:
+
+```text
+%TEMP%\Claude-Code-Installer-Script\logs\install-YYYYMMDD-HHMMSS.log
+```
+
+If the script fails, the window will print the exact log path. Check the last
+few lines in that file first; they usually show why the script exited.

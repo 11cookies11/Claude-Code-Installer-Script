@@ -66,6 +66,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$script:InstallerLogPath = $null
+$script:InstallerTranscriptStarted = $false
 
 function Write-Step {
     param([Parameter(Mandatory)][string]$Message)
@@ -150,6 +152,38 @@ function Resolve-OfflineRoot {
     }
 
     return $candidates[0]
+}
+
+function Start-InstallerLogging {
+    $logRoot = Join-Path ([System.IO.Path]::GetTempPath()) "Claude-Code-Installer-Script\logs"
+    New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
+
+    $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $script:InstallerLogPath = Join-Path $logRoot "install-$timestamp.log"
+
+    try {
+        Start-Transcript -LiteralPath $script:InstallerLogPath -Force | Out-Null
+        $script:InstallerTranscriptStarted = $true
+        Write-Host "日志文件: $script:InstallerLogPath" -ForegroundColor DarkGray
+    }
+    catch {
+        $script:InstallerLogPath = $null
+        Write-WarningLine "无法启动日志记录，后续只会输出到屏幕。"
+    }
+}
+
+function Stop-InstallerLogging {
+    if ($script:InstallerTranscriptStarted) {
+        try {
+            Stop-Transcript | Out-Null
+        }
+        catch {
+            # Ignore transcript shutdown errors.
+        }
+        finally {
+            $script:InstallerTranscriptStarted = $false
+        }
+    }
 }
 
 function Get-LaunchProfile {
@@ -622,79 +656,101 @@ function Invoke-InteractiveWizard {
     }
 }
 
-if (-not (Test-IsWindows)) {
-    throw "此安装脚本仅适用于 Windows。"
-}
-
-if ([string]::IsNullOrWhiteSpace($OfflineRoot)) {
-    $OfflineRoot = Resolve-OfflineRoot -ScriptRootValue $ScriptRoot
-}
-
-if ($NonInteractive.IsPresent -and [string]::IsNullOrWhiteSpace($DeepSeekApiKey)) {
-    $DeepSeekApiKey = Read-SecretValue -Prompt "请输入 DeepSeek API Token"
-}
-
-if (-not $NonInteractive.IsPresent) {
-    Invoke-InteractiveWizard -OfflineRootValue $OfflineRoot -InstallRootValue $InstallRoot
-    return
-}
-
-if ([string]::IsNullOrWhiteSpace($DeepSeekApiKey)) {
-    $DeepSeekApiKey = Read-SecretValue -Prompt "请输入 DeepSeek API Token"
-}
-
-if ([string]::IsNullOrWhiteSpace($DeepSeekApiKey)) {
-    throw "必须提供 DeepSeek API Token。"
-}
-
-if ($DeepSeekApiKey -notmatch "^sk-") {
-    Write-WarningLine "Token 不是以 sk- 开头，仍将继续。"
-}
-
-$claudeInstalled = [bool](Get-Command claude -ErrorAction SilentlyContinue)
-if (-not $claudeInstalled) {
-    if ($SkipClaudeInstall.IsPresent) {
-        throw "Claude Code 未安装，但传入了 `-SkipClaudeInstall`。"
+Start-InstallerLogging
+try {
+    if (-not (Test-IsWindows)) {
+        throw "此安装脚本仅适用于 Windows。"
     }
 
-    $manifest = Read-OfflineManifest -Root $OfflineRoot
-    Test-OfflineChecksums -Root $OfflineRoot -Manifest $manifest
+    if ([string]::IsNullOrWhiteSpace($OfflineRoot)) {
+        $OfflineRoot = Resolve-OfflineRoot -ScriptRootValue $ScriptRoot
+    }
 
-    if ($PSCmdlet.ShouldProcess("Claude Code", "install from offline package")) {
-        $installPrefix = Install-ClaudeCodeOffline -Root $OfflineRoot -TargetRoot $InstallRoot -Manifest $manifest
-        Write-Host "Claude Code 已安装到: $installPrefix"
+    if ($NonInteractive.IsPresent -and [string]::IsNullOrWhiteSpace($DeepSeekApiKey)) {
+        $DeepSeekApiKey = Read-SecretValue -Prompt "请输入 DeepSeek API Token"
+    }
+
+    if (-not $NonInteractive.IsPresent) {
+        Invoke-InteractiveWizard -OfflineRootValue $OfflineRoot -InstallRootValue $InstallRoot
+        return
+    }
+
+    if ([string]::IsNullOrWhiteSpace($DeepSeekApiKey)) {
+        $DeepSeekApiKey = Read-SecretValue -Prompt "请输入 DeepSeek API Token"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($DeepSeekApiKey)) {
+        throw "必须提供 DeepSeek API Token。"
+    }
+
+    if ($DeepSeekApiKey -notmatch "^sk-") {
+        Write-WarningLine "Token 不是以 sk- 开头，仍将继续。"
     }
 
     $claudeInstalled = [bool](Get-Command claude -ErrorAction SilentlyContinue)
-}
+    if (-not $claudeInstalled) {
+        if ($SkipClaudeInstall.IsPresent) {
+            throw "Claude Code 未安装，但传入了 `-SkipClaudeInstall`。"
+        }
 
-if ($PSCmdlet.ShouldProcess("current user environment", "configure DeepSeek variables")) {
-    Set-DeepSeekEnvironment `
-        -ApiKey $DeepSeekApiKey `
-        -Endpoint $BaseUrl `
-        -ModelName $Model `
-        -DefaultOpusModel $OpusModel `
-        -DefaultSonnetModel $SonnetModel `
-        -DefaultHaikuModel $HaikuModel `
-        -ClaudeSubagentModel $SubagentModel `
-        -ClaudeEffortLevel $EffortLevel `
-        -Persist $false
-}
+        $manifest = Read-OfflineManifest -Root $OfflineRoot
+        Test-OfflineChecksums -Root $OfflineRoot -Manifest $manifest
 
-if (-not $NoVerify.IsPresent) {
-    Test-ClaudeCommand
-}
+        if ($PSCmdlet.ShouldProcess("Claude Code", "install from offline package")) {
+            $installPrefix = Install-ClaudeCodeOffline -Root $OfflineRoot -TargetRoot $InstallRoot -Manifest $manifest
+            Write-Host "Claude Code 已安装到: $installPrefix"
+        }
 
-switch ($ConversationMode) {
-    "Continue" {
-        Write-Step "正在继续上次对话"
-        & claude --continue --permission-mode ($(if ($PermissionMode) { $PermissionMode } else { "acceptEdits" }))
+        $claudeInstalled = [bool](Get-Command claude -ErrorAction SilentlyContinue)
     }
-    "Resume" {
-        throw '历史选择仅适用于交互向导；请直接运行脚本并在菜单里选择“历史选择”。'
+
+    if ($PSCmdlet.ShouldProcess("current user environment", "configure DeepSeek variables")) {
+        Set-DeepSeekEnvironment `
+            -ApiKey $DeepSeekApiKey `
+            -Endpoint $BaseUrl `
+            -ModelName $Model `
+            -DefaultOpusModel $OpusModel `
+            -DefaultSonnetModel $SonnetModel `
+            -DefaultHaikuModel $HaikuModel `
+            -ClaudeSubagentModel $SubagentModel `
+            -ClaudeEffortLevel $EffortLevel `
+            -Persist $false
     }
-    default {
-        Invoke-ClaudeLaunch -Mode $LaunchMode -PermissionModeValue ($(if ($PermissionMode) { $PermissionMode } else { "acceptEdits" }))
+
+    if (-not $NoVerify.IsPresent) {
+        Test-ClaudeCommand
     }
+
+    switch ($ConversationMode) {
+        "Continue" {
+            Write-Step "正在继续上次对话"
+            & claude --continue --permission-mode ($(if ($PermissionMode) { $PermissionMode } else { "acceptEdits" }))
+        }
+        "Resume" {
+            throw '历史选择仅适用于交互向导；请直接运行脚本并在菜单里选择“历史选择”。'
+        }
+        default {
+            Invoke-ClaudeLaunch -Mode $LaunchMode -PermissionModeValue ($(if ($PermissionMode) { $PermissionMode } else { "acceptEdits" }))
+        }
+    }
+    Write-Step "完成"
 }
-Write-Step "完成"
+catch {
+    Write-Host ""
+    Write-Host "发生错误，脚本已中止。" -ForegroundColor Red
+    if ($script:InstallerLogPath) {
+        Write-Host "日志文件: $script:InstallerLogPath" -ForegroundColor Yellow
+    }
+    Write-Error $_
+    if (-not $NonInteractive.IsPresent) {
+        try {
+            Read-Host "按回车退出" | Out-Null
+        }
+        catch {
+        }
+    }
+    throw
+}
+finally {
+    Stop-InstallerLogging
+}

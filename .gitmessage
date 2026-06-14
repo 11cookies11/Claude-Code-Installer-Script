@@ -1,0 +1,22 @@
+﻿# Conventional Commits
+#
+# Format:
+#   <type>(optional scope): <subject>
+#
+# Common types:
+#   feat     - feature
+#   fix      - bug fix
+#   chore    - maintenance
+#   docs     - documentation
+#   refactor - refactor
+#   test     - tests
+#   ci       - CI
+#
+# Examples:
+#   feat: add winget install option
+#   fix: handle missing claude command after install
+
+<type>(optional scope): <subject>
+
+Summary:
+- ...

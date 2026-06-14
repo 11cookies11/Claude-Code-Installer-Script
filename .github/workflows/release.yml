@@ -1,0 +1,67 @@
+name: Release Package
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run smoke tests
+        shell: pwsh
+        run: .\tests\run-smoke-tests.ps1
+
+      - name: Build release archive
+        id: package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $stage = Join-Path $env:RUNNER_TEMP 'claude-code-release'
+          $src = Join-Path $stage 'src'
+          $vendor = Join-Path $src 'vendor'
+
+          Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $src -Force | Out-Null
+
+          Copy-Item -LiteralPath .\install-claude-code-deepseek.ps1 -Destination (Join-Path $stage 'install-claude-code-deepseek.ps1') -Force
+          Copy-Item -LiteralPath .\src\README.md -Destination (Join-Path $src 'README.md') -Force
+          Copy-Item -LiteralPath .\src\README.zh-CN.md -Destination (Join-Path $src 'README.zh-CN.md') -Force
+
+          Write-Host '==> Generating latest offline resources' -ForegroundColor Cyan
+          .\prepare-offline-package.ps1 -Force -VendorRoot $vendor
+
+          $zipName = 'Claude-Code-Installer-Script-' + $env:GITHUB_REF_NAME + '.zip'
+          $zipPath = Join-Path $env:RUNNER_TEMP $zipName
+          if (Test-Path -LiteralPath $zipPath) {
+            Remove-Item -LiteralPath $zipPath -Force
+          }
+
+          Compress-Archive -Path (Join-Path $stage 'install-claude-code-deepseek.ps1'), $src -DestinationPath $zipPath
+
+          $verify = Join-Path $env:RUNNER_TEMP 'release-verify'
+          Remove-Item -LiteralPath $verify -Recurse -Force -ErrorAction SilentlyContinue
+          Expand-Archive -LiteralPath $zipPath -DestinationPath $verify -Force
+
+          $topLevel = Get-ChildItem -LiteralPath $verify | Select-Object -ExpandProperty Name
+          if (@($topLevel).Count -ne 2 -or $topLevel -notcontains 'install-claude-code-deepseek.ps1' -or $topLevel -notcontains 'src') {
+            throw 'The release archive root must contain only install-claude-code-deepseek.ps1 and src.'
+          }
+
+          if (-not (Test-Path -LiteralPath (Join-Path $verify 'src\vendor\manifest.json'))) {
+            throw 'src\vendor\manifest.json was not found in the release archive.'
+          }
+
+          "zip_path=$zipPath" >> $env:GITHUB_OUTPUT
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.package.outputs.zip_path }}

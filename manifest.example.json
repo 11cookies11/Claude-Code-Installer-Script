@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-06-14T00:00:00.0000000Z",
+  "claudeCode": {
+    "version": "2.1.177",
+    "packages": [
+      "@anthropic-ai/claude-code@2.1.177",
+      "@anthropic-ai/claude-code-win32-x64@2.1.177",
+      "@anthropic-ai/claude-code-win32-arm64@2.1.177"
+    ]
+  },
+  "node": {
+    "version": "22.x.x",
+    "files": [
+      {
+        "architecture": "x64",
+        "path": "node/node-v22.x.x-win-x64.zip",
+        "sha256": "..."
+      },
+      {
+        "architecture": "arm64",
+        "path": "node/node-v22.x.x-win-arm64.zip",
+        "sha256": "..."
+      }
+    ]
+  },
+  "deepseek": {
+    "baseUrl": "https://api.deepseek.com/anthropic",
+    "opusModel": "deepseek-v4-pro[1m]",
+    "sonnetModel": "deepseek-v4-pro[1m]",
+    "haikuModel": "deepseek-v4-flash",
+    "subagentModel": "deepseek-v4-flash",
+    "effortLevel": "max"
+  }
+}

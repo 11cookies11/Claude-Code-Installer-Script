@@ -36,13 +36,20 @@ You can also automate the script with `-NonInteractive`.
 
 ## How to Get the DeepSeek Token
 
-The token here is the API key created in the DeepSeek console. The shortest
-path is:
+The token here is the API key created in the DeepSeek console. Follow these
+steps:
 
-1. Open the DeepSeek console and sign in
-2. Go to the API Keys or key management page
-3. Create a new key
-4. Copy the generated value, which usually starts with `sk-`
+1. Open the DeepSeek console and sign in to your account.
+2. Find the `API Keys`, `API Key`, `Key Management`, or similar page.
+3. Click `New Key`, `Create Key`, or the matching button to generate one.
+4. If a note or label field appears, you can name it something easy to
+   recognize, such as `Claude Code`.
+5. After the key is created, the full value is usually shown only once, so copy
+   it right away.
+6. The copied value usually starts with `sk-`; that is the value the script
+   asks for as `ANTHROPIC_AUTH_TOKEN`.
+7. If the console offers a save or download option, store it only in a place
+   you control, not in chat logs or source control.
 
-That value is what the script asks for as `ANTHROPIC_AUTH_TOKEN`. Treat it like
-a password and keep it out of commits and chat logs.
+If you lose the value later, you will usually need to create a new key in the
+DeepSeek console. Treat it like a password.

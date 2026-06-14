@@ -108,6 +108,19 @@ The `src/` folder contains:
 The release workflow regenerates `vendor/` at publish time, so the archive
 always carries fresh offline resources.
 
+## How to Get the DeepSeek Token
+
+The token mentioned by the script is the API key created in the DeepSeek
+console. The shortest path is:
+
+1. Open the DeepSeek console and sign in
+2. Go to the API Keys or key management page
+3. Create a new key
+4. Copy the generated value, which usually starts with `sk-`
+
+That value is what the script asks for as `ANTHROPIC_AUTH_TOKEN`. Treat it like
+a password: do not commit it, and do not paste it into chat logs.
+
 ## Install Parameters
 
 | Parameter | Default | Description |

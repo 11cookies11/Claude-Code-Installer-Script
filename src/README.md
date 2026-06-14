@@ -34,3 +34,15 @@ The wizard asks for the DeepSeek token first, then lets you choose:
 
 You can also automate the script with `-NonInteractive`.
 
+## How to Get the DeepSeek Token
+
+The token here is the API key created in the DeepSeek console. The shortest
+path is:
+
+1. Open the DeepSeek console and sign in
+2. Go to the API Keys or key management page
+3. Create a new key
+4. Copy the generated value, which usually starts with `sk-`
+
+That value is what the script asks for as `ANTHROPIC_AUTH_TOKEN`. Treat it like
+a password and keep it out of commits and chat logs.

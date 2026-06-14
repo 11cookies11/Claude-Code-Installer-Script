@@ -113,6 +113,17 @@ claude doctor
 
 release workflow 会在打包时重新生成 `vendor/`，所以发布包会带上最新的离线资源。
 
+## DeepSeek Token 怎么获取
+
+这里脚本里说的 token，就是 DeepSeek 控制台里创建出来的 API Key。你可以按这个最短路径来拿：
+
+1. 打开 DeepSeek 控制台并登录
+2. 进入 API Keys 或密钥管理页面
+3. 新建一个 Key
+4. 复制生成的密钥值，通常以 `sk-` 开头
+
+这个值就是脚本启动时要输入的 `ANTHROPIC_AUTH_TOKEN`。请把它当成密码一样保管，不要提交到仓库，不要发到聊天记录里。
+
 ## 安装脚本参数
 
 | 参数 | 默认值 | 说明 |
